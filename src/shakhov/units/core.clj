@@ -78,3 +78,46 @@
     (print-method 
      (:exponents dim) w)
     (.write w "}")))
+
+;;
+;;  Predicates
+;;
+
+(defn- unnamed?
+  [o]
+  (nil? (:name o)))
+
+;;
+;;  Adding dimensions to dimension systems
+;;
+
+(defn add-dimension
+  "Add new dimension to the dimension system."
+  ([^DimensionSystem ds exponents]
+     (add-dimension ds exponents nil))
+  ([^DimensionSystem ds exponents name]
+     (let [dim (new-dimension ds exponents name)]
+       (dosync
+        (alter (:dimensions ds)
+               (fn [dim-map]
+                 (let [old-dim (get dim-map exponents)]
+                   (assoc dim-map exponents
+                          (cond (nil? old-dim) dim
+                                (or (unnamed? old-dim)
+                                    (= name (:name old-dim))) old-dim
+                                :else (new-dimension ds exponents nil))))))
+        (when name
+          (alter (:dimensions ds)
+                 (fn [dim-map]
+                   (assoc dim-map name dim)))))
+       dim)))
+
+
+(defn get-dimension
+  "Return the dimension corresponding to the given set of dimension exponents
+   in dimension system, adding new dimension to the dimension system if necessary."
+  [^DimensionSystem ds exponents]
+  (if-let [dim (get @(:dimensions ds) exponents)]
+    dim
+    (add-dimension ds exponents)))
+
