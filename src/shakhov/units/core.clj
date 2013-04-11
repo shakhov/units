@@ -34,3 +34,25 @@
      (DimensionSystem. name
                        basic-dimensions
                        (ref {}))))
+
+;;
+;;  Dimension
+;;
+
+(defrecord Dimension
+    [^DimensionSystem dimension-system
+     exponents
+     name]
+  PQuantity
+  (dimension [this] this))
+
+(defn- new-dimension
+  ([dimension-system exponents]
+     (new-dimension dimension-system exponents nil))
+  ([dimension-system exponents name]
+     (let [exponents (into {} (remove (comp zero? second)
+                                      exponents))]
+       (Dimension. dimension-system
+                   exponents
+                   name))))
+
