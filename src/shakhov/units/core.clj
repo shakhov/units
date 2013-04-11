@@ -121,3 +121,19 @@
     dim
     (add-dimension ds exponents)))
 
+;;
+;;  Define dimensions systems and dimensions
+;;
+
+(defmacro def-dimension-system
+  "Define a dimension system specified by a set of basic dimension symbols.
+   Add all dimensions to the dimension system and define corresponding symbols in current namespace."
+  [ds-name & basic-dimensions]
+  (let [basic-dimensions (set basic-dimensions)
+        dimension-defs  (map (fn [d]
+                               `(def ~d (add-dimension ~ds-name {'~d 1} '~d)))
+                             basic-dimensions)]
+    `(do (def ~ds-name
+           (new-dimension-system '~basic-dimensions
+                                 '~ds-name))
+         ~@dimension-defs)))
