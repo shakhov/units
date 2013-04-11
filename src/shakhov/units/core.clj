@@ -35,6 +35,14 @@
                        basic-dimensions
                        (ref {}))))
 
+;;  Print-method
+
+(defmethod print-method DimensionSystem
+  [^DimensionSystem ds ^java.io.Writer w]
+  (.write w "#DS{")
+  (.write w (apply str (interpose \, (:basic-dimensions ds))))
+  (.write w "}"))
+
 ;;
 ;;  Dimension
 ;;
@@ -56,3 +64,17 @@
                    exponents
                    name))))
 
+;;  Print-method
+
+(defmethod print-method Dimension
+  [^Dimension dim ^java.io.Writer w]
+  (let [ds (:dimension-system dim)]
+    (.write w "#dimension:{")
+    (print-method (or (:name ds) ds) w)
+    (.write w ":")
+    (when-let [name (:name dim)]
+      (print-method name w)
+      (.write w "="))
+    (print-method 
+     (:exponents dim) w)
+    (.write w "}")))
