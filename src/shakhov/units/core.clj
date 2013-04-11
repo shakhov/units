@@ -19,3 +19,18 @@
   (magnitude-in-base-units [this]
     "Return the magnitude of quantity expressed in base units"))
 
+
+;;
+;;  Dimension System
+;;
+
+(defrecord DimensionSystem
+    [name basic-dimensions dimensions])
+
+(defn- new-dimension-system
+  ([basic-dimensions]
+     (new-dimension-system basic-dimensions nil))
+  ([basic-dimensions name]
+     (DimensionSystem. name
+                       basic-dimensions
+                       (ref {}))))
