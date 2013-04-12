@@ -178,7 +178,8 @@
   [ds-name & basic-dimensions]
   (let [basic-dimensions (set basic-dimensions)
         dimension-defs  (map (fn [d]
-                               `(def ~d (add-dimension ~ds-name {'~d 1} '~d)))
+                               `(do (def ~d (add-dimension ~ds-name {'~d 1} '~d))
+                                    (def ~(symbol (str d "?")) (partial dimension? ~d))))
                              basic-dimensions)]
     `(do (def ~ds-name
            (new-dimension-system '~basic-dimensions
@@ -201,8 +202,10 @@
                                     (map (partial * p#)
                                          (vals e#))))
                           ~dims ~pows))]
-    `(def ~name
-       (add-dimension ~ds ~exps '~name))))
+    `(do (def ~name
+           (add-dimension ~ds ~exps '~name))
+         (def ~(symbol (str name "?"))
+           (partial dimension? ~name)))))
 
 (defmacro def-dimension
   "Define new dimension names."
