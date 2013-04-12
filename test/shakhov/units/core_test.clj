@@ -62,3 +62,21 @@
     (is (thrown? Exception (* length 1)))
     (is (thrown? Exception (* length d1)))
     (is (thrown? Exception (def-dimension foobar [d1 2 length -2])))))
+
+(def-unit-system si-structural
+  length m
+  mass kg
+  time s)
+
+(deftest basic-unit-dimensions
+  (is (= length (dimension m)))
+  (is (= mass (dimension kg)))
+  (is (= time (dimension s))))
+
+(deftest basic-unit-magnitude
+  (is (= 1 (magnitude m)))
+  (is (= 1 (magnitude-in-base-units m)))
+  (is (= 1 (magnitude kg)))
+  (is (= 1 (magnitude-in-base-units kg)))
+  (is (= 1 (magnitude s)))
+  (is (= 1 (magnitude-in-base-units s))))
