@@ -122,6 +122,35 @@
     (add-dimension ds exponents)))
 
 ;;
+;;  Asserts for dimensions
+;;
+
+(defn- assert-same-dimension-system
+  [ds1 ds2]
+  (when-not (identical? ds1 ds2)
+    (throw (Exception. (str "Can't combine dimensions from " (:name ds1) " and " (:name ds2))))))
+
+;;
+;;  Dimension arithmetic
+;;
+
+(derive Dimension root-type)
+
+(defmethod ga/* [Dimension Dimension]
+  [d1 d2]
+  (assert-same-dimension-system (:dimension-system d1)
+                                (:dimension-system d2))
+  (get-dimension (:dimension-system d1)
+                 (merge-with + (:exponents d1) (:exponents d2))))
+
+(ga/defmethod* ga / Dimension
+  [d]
+  (let [exponents (:exponents d)]
+    (get-dimension (:dimension-system d)
+                   (zipmap (keys exponents)
+                           (map - (vals exponents))))))
+
+;;
 ;;  Define dimensions systems and dimensions
 ;;
 
@@ -137,3 +166,4 @@
            (new-dimension-system '~basic-dimensions
                                  '~ds-name))
          ~@dimension-defs)))
+
