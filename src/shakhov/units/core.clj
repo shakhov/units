@@ -119,6 +119,33 @@
   ([^UnitSystem unit-system ^Number factor ^Dimension dimension name]
      (Unit. unit-system factor dimension name)))
 
+;;  Print-Method
+
+(defn- basic-units-with-exponents
+  [us dim]
+  (apply str (interpose \* (map (fn [[d e]]
+                                  (str (get (:basic-dimensions-and-units us) d)
+                                       (when-not (<= 0 e 1) (str "^" e))))
+                                (:exponents dim)))))
+
+(defmethod print-method Unit
+  [^Unit u ^java.io.Writer w]
+  (let [us (:unit-system u)
+        basic? (contains? (set (vals (:basic-dimensions-and-units us))) (:name u))]
+    (.write w "#unit:{")
+    (print-method (or (:name us) us) w)
+    (.write w ":")
+    (when-let [name (:name u)]
+      (print-method name w)
+      (when-not basic?
+        (.write w "=")))
+    (when-not basic?
+      (print-method (:factor u) w)
+      (.write w "*")
+      (.write w (basic-units-with-exponents us (dimension u))))
+    (.write w "}")))
+
+
 ;;
 ;;  Adding dimensions to dimension systems
 ;;
