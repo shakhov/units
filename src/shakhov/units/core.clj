@@ -27,7 +27,7 @@
 (defrecord DimensionSystem
     [name basic-dimensions dimensions])
 
-(defn- new-dimension-system
+(defn new-dimension-system
   ([basic-dimensions]
      (new-dimension-system basic-dimensions nil))
   ([basic-dimensions name]
@@ -54,7 +54,7 @@
   PQuantity
   (dimension [this] this))
 
-(defn- new-dimension
+(defn new-dimension
   ([dimension-system exponents]
      (new-dimension dimension-system exponents nil))
   ([dimension-system exponents name]
@@ -165,5 +165,31 @@
     `(do (def ~ds-name
            (new-dimension-system '~basic-dimensions
                                  '~ds-name))
+         (def dimensionless (add-dimension ~ds-name {} 1))
          ~@dimension-defs)))
 
+(defmacro def-dimension*
+  [name spec]
+  (let [spec (partition 2 spec)
+        dims (vec (map first spec))
+        pows (vec (map second spec))
+        ds `(reduce (fn [ds1# ds2#]
+                     (assert-same-dimension-system ds1# ds2#)
+                     ds1#)
+                    (map :dimension-system ~dims))
+        exps `(apply merge-with +
+                     (map (fn [{e# :exponents} p#]
+                            (zipmap (keys e#)
+                                    (map (partial * p#)
+                                         (vals e#))))
+                          ~dims ~pows))]
+    `(def ~name
+       (add-dimension ~ds ~exps '~name))))
+
+(defmacro def-dimension
+  "Define new dimension names."
+  [& specs]
+  (let [specs (partition 2 specs)]
+    `(do ~@(map (fn [[name spec]]
+                  `(def-dimension* ~name ~(vec spec)))
+                specs))))
