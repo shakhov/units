@@ -20,6 +20,7 @@
   surface-density [density 1 length 1])
 
 (deftest dimension-exponents
+  (is (= {} (:exponents dimensionless)))
   (is (= '{length 2}
          (:exponents area)))
   (is (= '{length 3}
@@ -52,3 +53,12 @@
   (is (stress? (/ force length length)))
   (is (density? (/ mass length length length)))
   (is (surface-density? (/ mass area))))
+
+  
+(deftest dimension-exceptions
+  (let [ds1 (new-dimension-system #{'foo 'bar})
+        d1  (add-dimension ds1 {'foo 1 'bar 1})]
+    (is (thrown? Exception (* 1 length)))
+    (is (thrown? Exception (* length 1)))
+    (is (thrown? Exception (* length d1)))
+    (is (thrown? Exception (def-dimension foobar [d1 2 length -2])))))
