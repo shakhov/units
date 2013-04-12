@@ -79,17 +79,12 @@
      (:exponents dim) w)
     (.write w "}")))
 
-;;
-;;  Predicates
-;;
-
-(defn- unnamed?
-  [o]
-  (nil? (:name o)))
 
 ;;
 ;;  Adding dimensions to dimension systems
 ;;
+
+(declare unnamed?)
 
 (defn add-dimension
   "Add new dimension to the dimension system."
@@ -121,14 +116,37 @@
     dim
     (add-dimension ds exponents)))
 
+
 ;;
 ;;  Asserts for dimensions
 ;;
 
-(defn- assert-same-dimension-system
+(defn assert-same-dimension-system
   [ds1 ds2]
   (when-not (identical? ds1 ds2)
     (throw (Exception. (str "Can't combine dimensions from " (:name ds1) " and " (:name ds2))))))
+
+;;
+;;  Predicates
+;;
+
+(defn- unnamed?
+  [o]
+  (nil? (:name o)))
+
+(defn- compatible-dimensions?
+  [d1 d2]
+  (assert-same-dimension-system (:dimension-system d1)
+                                (:dimension-system d2))
+  (or (identical? d1 d2)
+      (and (= (:exponents d1) (:exponents d2))
+           (or (unnamed? d1) (unnamed? d2)))))
+
+(defn dimension?
+  "Return true if dim is a dimension compatible with quantity."
+  [dim o]
+  (compatible-dimensions? dim (dimension o)))
+
 
 ;;
 ;;  Dimension arithmetic
