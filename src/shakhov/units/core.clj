@@ -256,7 +256,6 @@
                   `(def-dimension* ~name ~(vec spec)))
                 specs))))
 
-
 ;;
 ;;  Adding units to unit systems
 ;;
@@ -290,3 +289,22 @@
   (if-let [unit (get-in @(:units us) [dim factor])]
     unit
     (add-unit us factor dim)))
+
+;;
+;; Define unit systems and units
+;;
+
+(defmacro def-unit-system
+  "Define a unit system in terms of basic dimensions and associated basic units."
+  [us-name & basic-dimensions-and-units]
+  (let [basic-dimensions-and-units (apply hash-map basic-dimensions-and-units)
+        unit-defs (map (fn [[d u]]
+                         `(def ~(symbol (str *ns*) (str u))
+                            (add-unit ~us-name 1 ~d '~u)))
+                       basic-dimensions-and-units)]
+    `(do (when-not (= ~@(map (fn [d] `(:dimension-system ~d)) (keys basic-dimensions-and-units)))
+           (throw (Exception. (str "Cannot defin unit system based on dimensions from different dimenson systems."))))
+         (def ~(symbol (str *ns*) (str us-name))
+           (new-unit-system '~basic-dimensions-and-units
+                            '~us-name))
+         ~@unit-defs)))
