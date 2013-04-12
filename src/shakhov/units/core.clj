@@ -155,7 +155,6 @@
     dim
     (add-dimension ds exponents)))
 
-
 ;;
 ;;  Asserts for dimensions
 ;;
@@ -256,3 +255,38 @@
     `(do ~@(map (fn [[name spec]]
                   `(def-dimension* ~name ~(vec spec)))
                 specs))))
+
+
+;;
+;;  Adding units to unit systems
+;;
+
+(defn add-unit
+  "Add new unit to the unit system."
+  ([^UnitSystem us ^Number factor ^Dimension dim]
+     (add-unit us factor dim nil))
+  ([^UnitSystem us ^Number factor ^Dimension dim name]
+     (let [unit (new-unit us factor dim name)]
+       (dosync
+        (alter (:units us)
+               (fn [unit-map]
+                 (let [old-unit (get-in unit-map [dim factor])]
+                   (assoc-in unit-map [dim factor]
+                             (cond (nil? old-unit) unit
+                                   (or (unnamed? old-unit)
+                                       (= name (:name old-unit))) old-unit
+                                       :else (new-unit us factor dim nil))))))
+        (when name
+          (alter (:units us)
+                 (fn [unit-map]
+                   (assoc unit-map name unit)))))
+       unit)))
+
+
+(defn get-unit
+  "Return unit corresponding to the given factor and dimension in the unit system,
+   adding new unit to the unit system if necessary."
+  [^UnitSystem us ^Number factor ^Dimension dim]
+  (if-let [unit (get-in @(:units us) [dim factor])]
+    unit
+    (add-unit us factor dim)))
