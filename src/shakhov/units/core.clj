@@ -79,7 +79,6 @@
      (:exponents dim) w)
     (.write w "}")))
 
-
 ;;
 ;;  Unit System
 ;;
@@ -101,6 +100,24 @@
   (.write w "#US{")
   (.write w (apply str (interpose \, (vals (:basic-dimensions-and-units us)))))
   (.write w "}"))
+
+;;
+;;  Unit
+;;
+
+(defrecord Unit
+  [^UnitSystem unit-system ^Number factor ^Dimension dimension name]
+  PQuantity
+  (dimension [this] dimension)
+  (unit [this] this)
+  (magnitude [this] 1)
+  (magnitude-in-base-units [this] factor))
+
+(defn new-unit
+  ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
+     (new-unit unit-system factor dimension nil))
+  ([^UnitSystem unit-system ^Number factor ^Dimension dimension name]
+     (Unit. unit-system factor dimension name)))
 
 ;;
 ;;  Adding dimensions to dimension systems
