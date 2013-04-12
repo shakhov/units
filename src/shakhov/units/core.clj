@@ -145,6 +145,40 @@
       (.write w (basic-units-with-exponents us (dimension u))))
     (.write w "}")))
 
+;;
+;;  Quantity
+;;
+
+(defrecord Quantity
+    [^Number magnitude ^Unit unit]
+  PQuantity
+  (dimension [this] (dimension unit))
+  (unit [this] unit)
+  (magnitude [this] magnitude)
+  (magnitude-in-base-units [this] (* magnitude (:factor unit))))
+
+(defn new-quantity
+  ([^Number magnitude ^Unit unit]
+     (Quantity. magnitude unit)))
+
+;;  Print-Method
+
+(defmethod print-method Quantity
+  [^Quantity q ^java.io.Writer w]
+  (let [u (unit q)
+        d (dimension q)]
+    (.write w "#")
+    (.write w (if (:name d) (str (:name d)) "quantity"))
+    (.write w ":{")
+    (print-method (:magnitude q) w)
+    (.write w " (")
+    (when-not (= 1 (:factor u))
+      (.write w (str (:factor u) "*")))
+    (.write w (if (:name u)
+                (str (:name u))
+                (basic-units-with-exponents (:unit-system u) d)))
+    (.write w ")")
+    (.write w "}")))
 
 ;;
 ;;  Adding dimensions to dimension systems
