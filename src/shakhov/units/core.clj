@@ -81,6 +81,28 @@
 
 
 ;;
+;;  Unit System
+;;
+(defrecord UnitSystem
+    [name basic-dimensions-and-units units])
+
+(defn new-unit-system
+  ([basic-dimensions-and-units]
+     (new-unit-system basic-dimensions-and-units nil))
+  ([basic-dimensions-and-units name]
+     (UnitSystem. name
+                  basic-dimensions-and-units
+                  (ref {}))))
+
+;;  Print-method
+
+(defmethod print-method UnitSystem
+  [^UnitSystem us ^java.io.Writer w]
+  (.write w "#US{")
+  (.write w (apply str (interpose \, (vals (:basic-dimensions-and-units us)))))
+  (.write w "}"))
+
+;;
 ;;  Adding dimensions to dimension systems
 ;;
 
