@@ -39,7 +39,7 @@
 
 (defmethod print-method DimensionSystem
   [^DimensionSystem ds ^java.io.Writer w]
-  (.write w "#DS{")
+  (.write w "#DS:{")
   (.write w (apply str (interpose \, (:basic-dimensions ds))))
   (.write w "}"))
 
@@ -47,12 +47,19 @@
 ;;  Dimension
 ;;
 
+(declare basic-dimensions-with-exponents)
+
 (defrecord Dimension
     [^DimensionSystem dimension-system
      exponents
      name]
   PQuantity
-  (dimension [this] this))
+  (dimension [this] this)
+  Object
+  (toString [this]
+    (if name
+      (str name)
+      (basic-dimensions-with-exponents dimension))))
 
 (defn new-dimension
   ([dimension-system exponents]
@@ -75,8 +82,7 @@
     (when-let [name (:name dim)]
       (print-method name w)
       (.write w "="))
-    (print-method 
-     (:exponents dim) w)
+    (.write w (basic-dimensions-with-exponents dim))
     (.write w "}")))
 
 ;;
@@ -97,13 +103,15 @@
 
 (defmethod print-method UnitSystem
   [^UnitSystem us ^java.io.Writer w]
-  (.write w "#US{")
+  (.write w "#US:{")
   (.write w (apply str (interpose \, (vals (:basic-dimensions-and-units us)))))
   (.write w "}"))
 
 ;;
 ;;  Unit
 ;;
+
+(declare basic-units-with-exponents)
 
 (defmulti in-units-of
   "Return quantity converted to given units."
@@ -117,7 +125,12 @@
   (magnitude [this] 1)
   (magnitude-in-base-units [this] factor)
   clojure.lang.IFn
-  (invoke [this o] (in-units-of this o)))
+  (invoke [this o] (in-units-of this o))
+  Object
+  (toString [this]
+    (if name
+      (str name)
+      (str factor "*" (basic-units-with-exponents unit-system dimension)))))
 
 (defn new-unit
   ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
@@ -126,13 +139,6 @@
      (Unit. unit-system factor dimension name)))
 
 ;;  Print-Method
-
-(defn- basic-units-with-exponents
-  [us dim]
-  (apply str (interpose \* (map (fn [[d e]]
-                                  (str (get (:basic-dimensions-and-units us) d)
-                                       (when-not (<= 0 e 1) (str "^" e))))
-                                (:exponents dim)))))
 
 (defmethod print-method Unit
   [^Unit u ^java.io.Writer w]
@@ -163,7 +169,10 @@
   (magnitude [this] magnitude)
   (magnitude-in-base-units [this] (* magnitude (:factor unit)))
   clojure.lang.IFn
-  (invoke [this o] (in-units-of this o)))
+  (invoke [this o] (in-units-of this o))
+  Object
+  (toString [this]
+    (str magnitude " (" unit ")")))
 
 (defn new-quantity
   ([^Number magnitude ^Unit unit]
@@ -187,6 +196,28 @@
                 (basic-units-with-exponents (:unit-system u) d)))
     (.write w ")")
     (.write w "}")))
+
+;;
+;;  Printing symbols with exponents
+;;
+
+(defn- symbols-with-exponents
+  [symbols]
+  (let [{pos true neg false} (group-by (comp pos? second) symbols)
+        symbols (concat (sort pos) (sort neg))]
+    (apply str (interpose \* (for [[s e] symbols]
+                               (str s (when-not (<= 0 e 1)
+                                        (str "^" e))))))))
+
+(defn- basic-dimensions-with-exponents
+  [dim]
+  (symbols-with-exponents (vec (:exponents dim))))
+
+(defn- basic-units-with-exponents
+  [us dim]
+  (symbols-with-exponents (map (fn [[d e]]
+                                 [(get (:basic-dimensions-and-units us) d) e])
+                               (:exponents dim))))
 
 ;;
 ;;  Hierarchies
