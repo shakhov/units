@@ -279,6 +279,10 @@
   [o]
   (nil? (:name o)))
 
+(defn- dimensionless?
+  [q]
+  (= {} (:exponents (dimension q))))
+
 (defn- compatible-dimensions?
   [d1 d2]
   (assert-same-dimension-system (:dimension-system d1)
@@ -447,7 +451,7 @@
               (magnitude-in-base-units q)
               (dimension u))))
 
-(defn to-unit-system
+(defn to-unit-system-of
   "Convert second quantity to the unit system of first quantity."
   [q1 q2]
   (let [to-us (:unit-system (unit q1))
@@ -463,10 +467,53 @@
 (defmethod in-units-of [Unit ::quantity]
   [^Unit u q]
   (assert-compatible-dimensions u q)
-  (let [q (to-unit-system u q)]
+  (let [q (to-unit-system-of u q)]
     (new-quantity (/ (magnitude-in-base-units q)
                      (:factor u)) u)))
 
 (defmethod in-units-of [Quantity root-type]
   [q o]
   (in-units-of (as-unit q) o))
+
+;;
+;;  Quantities arithmetic
+;;
+
+(defmethod ga/+ [::quantity ::quantity]
+  [q1 q2]
+  (assert-compatible-dimensions q1 q2)
+  (let [u1 (unit q1)
+        q2 (u1 q2)]
+    (u1 (+ (magnitude q1)
+           (magnitude q2)))))
+
+(defmethod ga/- ::quantity
+  [q]
+  ((unit q) (- (magnitude q))))
+
+
+(defmethod ga/* [::quantity ::quantity]
+  [q1 q2]
+  (let [q2 (to-unit-system-of q1 q2)
+        u1 (unit q1)
+        u2 (unit q2)
+        dim (ga/* (dimension u1) (dimension u2))]
+    (if (dimensionless? dim)
+      (* (magnitude-in-base-units q1)
+         (magnitude-in-base-units q2))
+      ((get-unit (:unit-system u1) (* (:factor u1) (:factor u2)) dim)
+       (* (magnitude q1) (magnitude q2))))))
+
+(defmethod ga/* [root-type ::quantity]
+  [a q]
+  ((unit q) (* a (magnitude q))))
+
+(defmethod ga/* [::quantity root-type]
+  [q a]
+  (ga/* a q))
+
+(ga/defmethod* ga / ::quantity
+  [q]
+  (let [u (unit q)
+        uinv (get-unit (:unit-system u) (/ (:factor u)) ((ga/qsym ga /) (:dimension u)))]
+    (uinv ((ga/qsym ga /) (magnitude q)))))

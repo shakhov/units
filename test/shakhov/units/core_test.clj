@@ -1,8 +1,8 @@
 (ns shakhov.units.core-test
-  (:refer-clojure :exclude [time force * /])
+  (:refer-clojure :exclude [time force * / + -])
   (:use clojure.test
         shakhov.units.core
-        [clojure.algo.generic.arithmetic :only [* /]]))
+        [clojure.algo.generic.arithmetic :only [* / + -]]))
 
 (def-dimension-system structural
   length mass time)
@@ -80,3 +80,46 @@
   (is (= 1 (magnitude-in-base-units kg)))
   (is (= 1 (magnitude s)))
   (is (= 1 (magnitude-in-base-units s))))
+
+(def-unit mm (* 0.001 m))
+(def-unit cm (* 0.01 m))
+(def-unit dm (* 0.1 m))
+(def-unit km (* 1000 m))
+
+(def-unit g (* 0.001 kg))
+(def-unit tonne (* 1000.0 kg))
+
+(def-unit N (/ (* kg m) s s))
+(def-unit kN (* 1e3 N))
+(def-unit MN (* 1e6 N))
+
+(let [g-accel (/ (* 9.81 m) s s)]
+  (def-unit kgf (* kg g-accel))
+  (def-unit tonf (* tonne g-accel)))
+
+(deftest derived-units
+  (is (length? mm))
+  (is (= 0.10 (:factor dm)))
+  (is (= 10.0 (magnitude (km 10.0))))
+  (is (= 0.10 (magnitude-in-base-units (cm 10.0))))
+
+  (is (mass? tonne))
+  (is (= 1.0 (magnitude-in-base-units (tonne 0.001))))
+  (is (= 1000.0 (:factor tonne)))
+
+  (is (force? tonf))
+  (is (= 9810.0 (magnitude-in-base-units tonf))))
+
+(deftest unit-arithmetic
+  (is (area? (* m m)))
+  (is (area? (* m cm)))
+  (is (pressure? (/ N m m)))
+  (is (stress? (/ MN cm cm)))
+  (is (density? (/ tonne m m m)))
+
+  (is (= 200.0 (magnitude (cm (+ m m)))))
+  (is (= 1020.0 (magnitude (kg (+ tonne (kg 20.0))))))
+  (is (= 2021620.0 (magnitude (N (* 2 (+ MN kN tonf))))))
+  (is (= 1.0 (magnitude ((* m m) (* 100 cm 100 cm)))))
+
+  (is (= 0.0 (magnitude (- m (cm 100))))))
