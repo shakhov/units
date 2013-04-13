@@ -4,6 +4,8 @@
             [clojure.algo.generic.comparison :as gc]
             [clojure.algo.generic.math-functions :as gm]))
 
+(set! *warn-on-reflection* true)
+
 ;;
 ;;   Protocol for quantity-like objects: dimensions, units and quantities
 ;;
@@ -40,7 +42,7 @@
 (defmethod print-method DimensionSystem
   [^DimensionSystem ds ^java.io.Writer w]
   (.write w "#DS:{")
-  (.write w (apply str (interpose \, (:basic-dimensions ds))))
+  (print-method (apply str (interpose \, (:basic-dimensions ds))))
   (.write w "}"))
 
 ;;
@@ -82,7 +84,7 @@
     (when-let [name (:name dim)]
       (print-method name w)
       (.write w "="))
-    (.write w (basic-dimensions-with-exponents dim))
+    (print-method (basic-dimensions-with-exponents dim))
     (.write w "}")))
 
 ;;
@@ -104,7 +106,7 @@
 (defmethod print-method UnitSystem
   [^UnitSystem us ^java.io.Writer w]
   (.write w "#US:{")
-  (.write w (apply str (interpose \, (vals (:basic-dimensions-and-units us)))))
+  (print-method (apply str (interpose \, (vals (:basic-dimensions-and-units us)))))
   (.write w "}"))
 
 ;;
@@ -154,7 +156,7 @@
     (when-not basic?
       (print-method (:factor u) w)
       (.write w "*")
-      (.write w (basic-units-with-exponents us (dimension u))))
+      (print-method (basic-units-with-exponents us (dimension u))))
     (.write w "}")))
 
 ;;
@@ -191,9 +193,9 @@
     (.write w " (")
     (when-not (= 1 (:factor u))
       (.write w (str (:factor u) "*")))
-    (.write w (if (:name u)
-                (str (:name u))
-                (basic-units-with-exponents (:unit-system u) d)))
+    (print-method (if (:name u)
+                    (:name u)
+                    (basic-units-with-exponents (:unit-system u) d)))
     (.write w ")")
     (.write w "}")))
 
@@ -209,11 +211,11 @@
                                (str s (when-not (<= 0 e 1)
                                         (str "^" e))))))))
 
-(defn- basic-dimensions-with-exponents
+(defn- ^String basic-dimensions-with-exponents
   [dim]
   (symbols-with-exponents (vec (:exponents dim))))
 
-(defn- basic-units-with-exponents
+(defn- ^String basic-units-with-exponents
   [us dim]
   (symbols-with-exponents (map (fn [[d e]]
                                  [(get (:basic-dimensions-and-units us) d) e])
