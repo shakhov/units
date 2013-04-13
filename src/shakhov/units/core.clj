@@ -59,7 +59,7 @@
   (toString [this]
     (if name
       (str name)
-      (basic-dimensions-with-exponents dimension))))
+      (basic-dimensions-with-exponents this))))
 
 (defn new-dimension
   ([dimension-system exponents]
