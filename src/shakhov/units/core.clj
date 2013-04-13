@@ -105,13 +105,19 @@
 ;;  Unit
 ;;
 
+(defmulti in-units-of
+  "Return quantity converted to given units."
+  (fn [u o] [(type u) (type o)]))
+
 (defrecord Unit
   [^UnitSystem unit-system ^Number factor ^Dimension dimension name]
   PQuantity
   (dimension [this] dimension)
   (unit [this] this)
   (magnitude [this] 1)
-  (magnitude-in-base-units [this] factor))
+  (magnitude-in-base-units [this] factor)
+  clojure.lang.IFn
+  (invoke [this o] (in-units-of this o)))
 
 (defn new-unit
   ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
@@ -155,7 +161,9 @@
   (dimension [this] (dimension unit))
   (unit [this] unit)
   (magnitude [this] magnitude)
-  (magnitude-in-base-units [this] (* magnitude (:factor unit))))
+  (magnitude-in-base-units [this] (* magnitude (:factor unit)))
+  clojure.lang.IFn
+  (invoke [this o] (in-units-of this o)))
 
 (defn new-quantity
   ([^Number magnitude ^Unit unit]
@@ -179,6 +187,15 @@
                 (basic-units-with-exponents (:unit-system u) d)))
     (.write w ")")
     (.write w "}")))
+
+;;
+;;  Hierarchies
+;;
+
+(derive Dimension root-type)
+(derive ::quantity root-type)
+(derive Unit ::quantity)
+(derive Quantity ::quantity)
 
 ;;
 ;;  Adding dimensions to dimension systems
@@ -217,17 +234,13 @@
     (add-dimension ds exponents)))
 
 ;;
-;;  Asserts for dimensions
+;;  Predicates and asserts
 ;;
 
 (defn assert-same-dimension-system
   [ds1 ds2]
   (when-not (identical? ds1 ds2)
     (throw (Exception. (str "Can't combine dimensions from " (:name ds1) " and " (:name ds2))))))
-
-;;
-;;  Predicates
-;;
 
 (defn- unnamed?
   [o]
@@ -241,17 +254,21 @@
       (and (= (:exponents d1) (:exponents d2))
            (or (unnamed? d1) (unnamed? d2)))))
 
+(defn- assert-compatible-dimensions
+  [q1 q2]
+  (let [d1 (dimension q1)
+        d2 (dimension q2)]
+    (when-not (compatible-dimensions? d1 d2)
+      (throw (Exception. (str "Cannot convert " d1 " to " d2))))))
+
 (defn dimension?
   "Return true if dim is a dimension compatible with quantity."
   [dim o]
   (compatible-dimensions? dim (dimension o)))
 
-
 ;;
 ;;  Dimension arithmetic
 ;;
-
-(derive Dimension root-type)
 
 (defmethod ga/* [Dimension Dimension]
   [d1 d2]
@@ -352,23 +369,6 @@
     (add-unit us factor dim)))
 
 ;;
-;;  Converting quantities to units
-;;
-
-(defmulti as-unit 
-  "Return new unit with factor = (magnitude of quantity) x (unit factor)"
-  type)
-
-(defmethod as-unit Unit [u] u)
-
-(defmethod as-unit Quantity
-  [q]
-  (let [u (unit q)]
-    (get-unit (:unit-system u)
-              (magnitude-in-base-units q)
-              (dimension u))))
-
-;;
 ;; Define unit systems and units
 ;;
 
@@ -396,3 +396,44 @@
                  (:factor unit#)
                  (:dimension unit#)
                  '~name))))
+
+;;
+;;  Converting quantities and units
+;;
+
+(defmulti as-unit 
+  "Return new unit with factor = (magnitude of quantity) x (unit factor)"
+  type)
+
+(defmethod as-unit Unit [u] u)
+
+(defmethod as-unit Quantity
+  [q]
+  (let [u (unit q)]
+    (get-unit (:unit-system u)
+              (magnitude-in-base-units q)
+              (dimension u))))
+
+(defn to-unit-system
+  "Convert second quantity to the unit system of first quantity."
+  [q1 q2]
+  (let [to-us (:unit-system (unit q1))
+        from-us (:unit-system (unit q2))]
+    (if (identical? to-us from-us)
+      q2
+      (throw (Exception. (str "Cannot convert unit system from " (:name from-us) " to " (:name to-us)))))))
+
+(defmethod in-units-of [Unit Number]
+  [^Unit u ^Number m]
+  (new-quantity m u))
+
+(defmethod in-units-of [Unit ::quantity]
+  [^Unit u q]
+  (assert-compatible-dimensions u q)
+  (let [q (to-unit-system u q)]
+    (new-quantity (/ (magnitude-in-base-units q)
+                     (:factor u)) u)))
+
+(defmethod in-units-of [Quantity root-type]
+  [q o]
+  (in-units-of (as-unit q) o))
