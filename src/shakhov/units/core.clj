@@ -352,6 +352,23 @@
     (add-unit us factor dim)))
 
 ;;
+;;  Converting quantities to units
+;;
+
+(defmulti as-unit 
+  "Return new unit with factor = (magnitude of quantity) x (unit factor)"
+  type)
+
+(defmethod as-unit Unit [u] u)
+
+(defmethod as-unit Quantity
+  [q]
+  (let [u (unit q)]
+    (get-unit (:unit-system u)
+              (magnitude-in-base-units q)
+              (dimension u))))
+
+;;
 ;; Define unit systems and units
 ;;
 
@@ -369,3 +386,13 @@
            (new-unit-system '~basic-dimensions-and-units
                             '~us-name))
          ~@unit-defs)))
+
+(defmacro def-unit
+  "Define a new unit name with magntude and dimension derived from the quantity."
+  [name q]
+  `(let [unit# (as-unit ~q)]
+     (def ~(symbol (str *ns*) (str name))
+       (add-unit (:unit-system unit#)
+                 (:factor unit#)
+                 (:dimension unit#)
+                 '~name))))
