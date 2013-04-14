@@ -1,8 +1,9 @@
 (ns shakhov.units.core-test
-  (:refer-clojure :exclude [time force * / + -])
+  (:refer-clojure :exclude [time force * / + - zero? pos? neg? < > =])
   (:use clojure.test
         shakhov.units.core
-        [clojure.algo.generic.arithmetic :only [* / + -]]))
+        [clojure.algo.generic.arithmetic :only [* / + -]]
+        [clojure.algo.generic.comparison :only [zero? pos? neg? < > =]]))
 
 (def-dimension-system structural
   length mass time)
@@ -110,7 +111,7 @@
   (is (force? tonf))
   (is (= 9810.0 (magnitude-in-base-units tonf))))
 
-(deftest unit-arithmetic
+(deftest quantity-arithmetic
   (is (area? (* m m)))
   (is (area? (* m cm)))
   (is (pressure? (/ N m m)))
@@ -123,3 +124,11 @@
   (is (= 1.0 (magnitude ((* m m) (* 100 cm 100 cm)))))
 
   (is (= 0.0 (magnitude (- m (cm 100))))))
+
+(deftest quantity-comparison
+  (is (pos? (+ (cm 20) m)))
+  (is (neg? (- (kg 100) tonne)))
+  (is (zero? (- m (* 100 cm))))
+  (is (< mm (* 10 cm) (/ m 2)))
+  (is (> (/ tonne 3) (* 100 kg) (/ kg 10)))
+  (is (= (* 1000 kg) (* 1 tonne))))

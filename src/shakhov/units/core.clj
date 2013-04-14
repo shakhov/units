@@ -517,3 +517,31 @@
   (let [u (unit q)
         uinv (get-unit (:unit-system u) (/ (:factor u)) ((ga/qsym ga /) (:dimension u)))]
     (uinv ((ga/qsym ga /) (magnitude q)))))
+
+;;
+;;  Generic comparison
+;;
+
+(defmethod gc/zero? ::quantity
+  [q]
+  (gc/zero? (magnitude q)))
+
+(defmethod gc/pos? ::quantity
+  [q]
+  (gc/pos? (magnitude q)))
+
+(defmethod gc/neg? ::quantity
+  [q]
+  (gc/neg? (magnitude q)))
+
+(defmethod gc/> [::quantity ::quantity]
+  [q1 q2]
+  (gc/pos? (magnitude (ga/- q1 q2))))
+
+(defmethod gc/< [::quantity ::quantity]
+  [q1 q2]
+  (gc/neg? (magnitude (ga/- q1 q2))))
+
+(defmethod gc/= [::quantity ::quantity]
+  [q1 q2]
+  (gc/zero? (magnitude (ga/- q1 q2))))
