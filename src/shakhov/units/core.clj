@@ -283,6 +283,11 @@
   [q]
   (= {} (:exponents (dimension q))))
 
+(defn- assert-dimensionless
+  [q]
+  (when-not (dimensionless? q)
+    (throw (Exception. "Argument must be dimensionless: " q))))
+
 (defn- compatible-dimensions?
   [d1 d2]
   (assert-same-dimension-system (:dimension-system d1)
@@ -545,3 +550,26 @@
 (defmethod gc/= [::quantity ::quantity]
   [q1 q2]
   (gc/zero? (magnitude (ga/- q1 q2))))
+
+;
+; Generic math functions
+;
+
+(defmethod gm/abs ::quantity
+  [q]
+  ((unit q) (gm/abs (magnitude q))))
+
+(defmethod gm/sgn ::quantity
+  [q]
+  (gm/sgn (magnitude q)))
+
+(doseq [f [gm/sin gm/cos gm/tan gm/asin gm/acos gm/atan gm/exp gm/log]]
+  (defmethod f ::quantity
+    [q]
+    (assert-dimensionless q)
+    (f (magnitude-in-base-units q))))
+
+(defmethod gm/atan2 [::quantity ::quantity]
+  [q1 q2]
+  (let [q2 ((unit q1) q2)]
+    (gm/atan2 (magnitude q1) (magnitude q2))))
