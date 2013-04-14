@@ -42,7 +42,7 @@
 (defmethod print-method DimensionSystem
   [^DimensionSystem ds ^java.io.Writer w]
   (.write w "#DS:{")
-  (print-method (apply str (interpose \, (:basic-dimensions ds))))
+  (.write w ^String (apply str (interpose \, (:basic-dimensions ds))))
   (.write w "}"))
 
 ;;
@@ -84,7 +84,7 @@
     (when-let [name (:name dim)]
       (print-method name w)
       (.write w "="))
-    (print-method (basic-dimensions-with-exponents dim))
+    (.write w ^String (basic-dimensions-with-exponents dim))
     (.write w "}")))
 
 ;;
@@ -106,7 +106,7 @@
 (defmethod print-method UnitSystem
   [^UnitSystem us ^java.io.Writer w]
   (.write w "#US:{")
-  (print-method (apply str (interpose \, (vals (:basic-dimensions-and-units us)))))
+  (.write w ^String (apply str (interpose \, (vals (:basic-dimensions-and-units us)))))
   (.write w "}"))
 
 ;;
@@ -156,7 +156,7 @@
     (when-not basic?
       (print-method (:factor u) w)
       (.write w "*")
-      (print-method (basic-units-with-exponents us (dimension u))))
+      (.write w ^String (basic-units-with-exponents us (dimension u))))
     (.write w "}")))
 
 ;;
@@ -193,9 +193,9 @@
     (.write w " (")
     (when-not (= 1 (:factor u))
       (.write w (str (:factor u) "*")))
-    (print-method (if (:name u)
-                    (:name u)
-                    (basic-units-with-exponents (:unit-system u) d)))
+    (if (:name u)
+      (print-method (:name u) w)
+      (.write w ^String (basic-units-with-exponents (:unit-system u) d)))
     (.write w ")")
     (.write w "}")))
 
