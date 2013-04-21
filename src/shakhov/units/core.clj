@@ -456,27 +456,31 @@
 ;;  Converting quantities and units
 ;;
 
+(defn to-unit-system
+  "Convert quantity to the unit system."
+  [to-us q]
+  (let [from-us (:unit-system (unit q))]
+    (if (identical? to-us from-us)
+      q
+      (throw (Exception. (str "Cannot convert unit system from " (:name from-us) " to " (:name to-us)))))))
+
 (defmulti as-unit 
   "Return new unit with factor = (magnitude of quantity) x (unit factor)"
-  type)
+  (fn [us o] (type o)))
 
-(defmethod as-unit Unit [u] u)
+(defmethod as-unit Unit [us u]
+  (to-unit-system us u))
+
+(defmethod as-unit Dimension
+  [us dim]
+  (get-unit us 1 dim))
 
 (defmethod as-unit Quantity
-  [q]
-  (let [u (unit q)]
-    (get-unit (:unit-system u)
+  [us q]
+  (let [u (to-unit-system us (unit q))]
+    (get-unit us
               (magnitude-in-base-units q)
               (dimension u))))
-
-(defn to-unit-system-of
-  "Convert second quantity to the unit system of first quantity."
-  [q1 q2]
-  (let [to-us (:unit-system (unit q1))
-        from-us (:unit-system (unit q2))]
-    (if (identical? to-us from-us)
-      q2
-      (throw (Exception. (str "Cannot convert unit system from " (:name from-us) " to " (:name to-us)))))))
 
 (defmethod in-units-of [Unit Number]
   [^Unit u ^Number m]
@@ -485,13 +489,13 @@
 (defmethod in-units-of [Unit ::quantity]
   [^Unit u q]
   (assert-compatible-dimensions u q)
-  (let [q (to-unit-system-of u q)]
+  (let [q (to-unit-system (:unit-system u) q)]
     (new-quantity (/ (magnitude-in-base-units q)
                      (:factor u)) u)))
 
 (defmethod in-units-of [Quantity root-type]
   [q o]
-  (in-units-of (as-unit q) o))
+  (in-units-of (as-unit (:unit-system (unit q)) q) o))
 
 ;;
 ;;  Quantities arithmetic
@@ -512,7 +516,7 @@
 
 (defmethod ga/* [::quantity ::quantity]
   [q1 q2]
-  (let [q2 (to-unit-system-of q1 q2)
+  (let [q2 (to-unit-system (:unit-system (unit q1))  q2)
         u1 (unit q1)
         u2 (unit q2)
         dim (ga/* (dimension u1) (dimension u2))]
