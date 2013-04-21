@@ -355,14 +355,14 @@
          ~@dimension-defs))) 
 
 (defmacro def-dimension*
-  [name spec]
+  [ds name spec]
   (let [spec (partition 2 spec)
         dims (vec (map first spec))
         pows (vec (map second spec))
         ds `(reduce (fn [ds1# ds2#]
-                     (assert-same-dimension-system ds1# ds2#)
-                     ds1#)
-                    (map :dimension-system ~dims))
+                      (assert-same-dimension-system ds1# ds2#)
+                      ds1#)
+                    ~ds (map :dimension-system ~dims))
         exps `(apply merge-with +
                      (map (fn [{e# :exponents} p#]
                             (zipmap (keys e#)
@@ -375,11 +375,11 @@
            (partial dimension? ~name)))))
 
 (defmacro def-dimension
-  "Define new dimension names."
-  [& specs]
+  "Define new dimension names in the dimension system."
+  [ds & specs]
   (let [specs (partition 2 specs)]
     `(do ~@(map (fn [[name spec]]
-                  `(def-dimension* ~name ~(vec spec)))
+                  `(def-dimension* ~ds ~name ~(vec spec)))
                 specs))))
 
 ;;
