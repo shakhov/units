@@ -201,23 +201,29 @@
 ;;  Printing symbols with exponents
 ;;
 
+(declare dimensionless?)
+
 (defn- symbols-with-exponents
   [symbols]
   (let [{pos true neg false} (group-by (comp pos? second) symbols)
         symbols (concat (sort pos) (sort neg))]
     (apply str (interpose \* (for [[s e] symbols]
-                               (str s (when-not (<= 0 e 1)
+                               (str s (when-not (= 1 e)
                                         (str "^" e))))))))
 
 (defn- ^String basic-dimensions-with-exponents
   [dim]
-  (symbols-with-exponents (vec (:exponents dim))))
+  (if-not (dimensionless? dim)
+    (symbols-with-exponents (vec (:exponents dim)))
+    "1"))
 
 (defn- ^String basic-units-with-exponents
   [us dim]
-  (symbols-with-exponents (map (fn [[d e]]
-                                 [(get (:basic-dimensions-and-units us) d) e])
-                               (:exponents dim))))
+  (if-not (dimensionless? dim)
+    (symbols-with-exponents (map (fn [[d e]]
+                                   [(get (:basic-dimensions-and-units us) d) e])
+                                 (:exponents dim)))
+    "1"))
 
 ;;
 ;;  Hierarchies
