@@ -590,3 +590,33 @@
   [q1 q2]
   (let [q2 ((unit q1) q2)]
     (gm/atan2 (magnitude q1) (magnitude q2))))
+
+(defn- int-pow
+  [q ^Integer p]
+  (apply ga/* (repeat p q)))
+
+(defn- ratio-pow
+  [q ^clojure.lang.Ratio r]
+  (let [dim       (dimension q)
+        exponents (:exponents dim)
+        exponents (zipmap (keys exponents)
+                          (map (partial * r) (vals exponents)))]
+    (when-not (every? integer? (vals exponents))
+      (throw (Exception. (str "Cannot take " dim " to power " r))))
+    (let [dim (get-dimension (:dimension-system dim) exponents)
+          u   (get-unit (:unit-system (unit q)) 1 dim)]
+      (u (gm/pow (magnitude-in-base-units q) r)))))
+
+(defmethod gm/pow [::quantity Number]
+  [q ^Number p]
+  (cond (dimensionless? q)  (gm/pow (magnitude-in-base-units q) p)
+        (zero? p)           1
+        (= p 1)             q
+        (integer? p)        (int-pow q p)
+        (ratio? p)          (ratio-pow q p)
+        :else               (throw (Exception. (str "Cannot take quantity to "
+                                                    (type p) " power")))))
+
+(defmethod gm/sqrt ::quantity
+  [q]
+  (ratio-pow q 1/2))
