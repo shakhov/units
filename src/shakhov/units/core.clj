@@ -352,9 +352,7 @@
     `(do (def ~(symbol (str *ns*) (str ds-name))
            (new-dimension-system '~basic-dimensions
                                  '~ds-name))
-         (def ~(symbol (str *ns*) "dimensionless")
-           (add-dimension ~ds-name {} 1))
-         ~@dimension-defs)))
+         ~@dimension-defs))) 
 
 (defmacro def-dimension*
   [name spec]
