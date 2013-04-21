@@ -435,15 +435,22 @@
                             '~us-name))
          ~@unit-defs)))
 
-(defmacro def-unit
-  "Define a new unit name with magntude and dimension derived from the quantity."
-  [name q]
-  `(let [unit# (as-unit ~q)]
+(defmacro def-unit*
+  [us name q]
+  `(let [unit# (as-unit ~us ~q)]
      (def ~(symbol (str *ns*) (str name))
-       (add-unit (:unit-system unit#)
+       (add-unit ~us
                  (:factor unit#)
                  (:dimension unit#)
                  '~name))))
+
+(defmacro def-unit
+  "Define a new unit name with magntude and dimension derived from the quantity."
+  [us & specs]
+  (let [specs (partition 2 specs)]
+    `(do ~@(map (fn [[name q]]
+                  `(def-unit* ~us ~name ~q))
+                specs))))
 
 ;;
 ;;  Converting quantities and units
