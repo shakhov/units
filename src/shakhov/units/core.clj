@@ -287,9 +287,9 @@
   [o]
   (nil? (:name o)))
 
-(defn- dimensionless?
+(defn dimensionless?
   [q]
-  (= {} (:exponents (dimension q))))
+  (every? zero? (vals (:exponents (dimension q)))))
 
 (defn- assert-dimensionless
   [q]
