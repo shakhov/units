@@ -21,7 +21,6 @@
   (magnitude-in-base-units [this]
     "Return the magnitude of quantity expressed in base units"))
 
-
 ;;
 ;;  Dimension System
 ;;
@@ -429,7 +428,7 @@
                             (add-unit ~us-name 1 ~d '~u)))
                        basic-dimensions-and-units)]
     `(do (when-not (= ~@(map (fn [d] `(:dimension-system ~d)) (keys basic-dimensions-and-units)))
-           (throw (Exception. (str "Cannot defin unit system based on dimensions from different dimenson systems."))))
+           (throw (Exception. (str "Cannot define unit system based on dimensions from different dimenson systems."))))
          (def ~(symbol (str *ns*) (str us-name))
            (new-unit-system '~basic-dimensions-and-units
                             '~us-name))
@@ -452,6 +451,17 @@
                   `(def-unit* ~us ~name ~q))
                 specs))))
 
+(defmacro def-prefixed-units
+  ""
+  [us base-units & spec]
+  (let [unit-defs (for [unit base-units
+                        [prefix factor] (partition 2 spec)]
+                    `(def-unit
+                       ~us
+                       ~(symbol (str prefix (name unit)))
+                       (ga/* ~factor ~unit)))]
+    `(do ~@unit-defs)))
+
 ;;
 ;;  Converting quantities and units
 ;;
@@ -473,6 +483,7 @@
 
 (defmethod as-unit Dimension
   [us dim]
+  ;; FIXME: assert dimension systems
   (get-unit us 1 dim))
 
 (defmethod as-unit Quantity
