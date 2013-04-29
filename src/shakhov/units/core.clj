@@ -395,12 +395,7 @@
        (dosync
         (alter (:units us)
                (fn [unit-map]
-                 (let [old-unit (get-in unit-map [dim factor])]
-                   (assoc-in unit-map [dim factor]
-                             (cond (nil? old-unit) unit
-                                   (or (unnamed? old-unit)
-                                       (= name (:name old-unit))) old-unit
-                                       :else (new-unit us factor dim nil))))))
+                 (assoc-in unit-map [dim factor] unit)))
         (when name
           (alter (:units us)
                  (fn [unit-map]
