@@ -125,7 +125,7 @@
   PQuantity
   (dimension [this] dimension)
   (unit [this] this)
-  (magnitude [this] 1)
+  (magnitude [this] 1.0)
   (magnitude-in-base-units [this] factor)
   clojure.lang.IFn
   (invoke [this o] (in-units-of this o))
@@ -194,7 +194,7 @@
     (.write w " (")
     (if (:name u)
       (print-method (:name u) w)
-      (do (when-not (= 1 (:factor u))
+      (do (when-not (== 1.0 (:factor u))
             (.write w (str (:factor u) "*")))
           (.write w ^String (basic-units-with-exponents (:unit-system u) d))))
     (.write w ")")
@@ -426,7 +426,7 @@
   (let [basic-dimensions-and-units (apply hash-map basic-dimensions-and-units)
         unit-defs (map (fn [[d u]]
                          `(def ~(symbol (str *ns*) (str u))
-                            (add-unit ~us-name 1 ~d '~u)))
+                            (add-unit ~us-name 1.0 ~d '~u)))
                        basic-dimensions-and-units)]
     `(do (when-not (= ~@(map (fn [d] `(:dimension-system ~d)) (keys basic-dimensions-and-units)))
            (throw (Exception. (str "Cannot define unit system based on dimensions from different dimenson systems."))))
@@ -484,8 +484,9 @@
 
 (defmethod as-unit Dimension
   [us dim]
+  ;; No unit name!!!
   ;; FIXME: assert dimension systems
-  (get-unit us 1 dim))
+  (add-unit us 1.0 dim))
 
 (defmethod as-unit Quantity
   [us q]
@@ -622,7 +623,7 @@
 (defmethod gm/pow [::quantity Number]
   [q ^Number p]
   (cond (dimensionless? q)  (gm/pow (magnitude-in-base-units q) p)
-        (zero? p)           1
+        (zero? p)           1.0
         (= p 1)             q
         (integer? p)        (int-pow q p)
         (ratio? p)          (ratio-pow q p)
