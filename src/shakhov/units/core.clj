@@ -531,8 +531,9 @@
     (if (dimensionless? dim)
       (* (magnitude-in-base-units q1)
          (magnitude-in-base-units q2))
-      ((get-unit (:unit-system u1) (* (:factor u1) (:factor u2)) dim)
-       (* (magnitude q1) (magnitude q2))))))
+      ((get-unit (:unit-system u1) 1.0 dim)
+       (* (magnitude-in-base-units q1) 
+          (magnitude-in-base-units q2))))))
 
 (defmethod ga/* [root-type ::quantity]
   [a q]
