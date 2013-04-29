@@ -62,12 +62,16 @@
       (str name)
       (basic-dimensions-with-exponents this))))
 
+(defn- filter-exponents
+  [exponents]
+  (into {} (remove (comp zero? second) exponents)))
+
 (defn new-dimension
   ([dimension-system exponents]
      (new-dimension dimension-system exponents nil))
   ([dimension-system exponents name]
      (Dimension. dimension-system
-                 exponents
+                 (filter-exponents exponents)
                  name)))
 
 ;;  Print-method
@@ -260,18 +264,15 @@
                    (assoc dim-map name dim)))))
        dim)))
 
-(defn- filter-exponents
-  [exponents]
-  (into {} (remove (comp zero? second) exponents)))
-
 (defn get-dimension
   "Return the dimension corresponding to the given set of dimension exponents
    in dimension system, adding new dimension to the dimension system if necessary."
   [^DimensionSystem ds exponents]
-  (let [exponents (filter-exponents exponents)]
-    (if-let [dim (get @(:dimensions ds) exponents)]
-      dim
-      (add-dimension ds exponents))))
+  (let [exponents exponents]
+    (let [exponents (filter-exponents exponents)]
+      (if-let [dim (get @(:dimensions ds) exponents)]
+        dim
+        (add-dimension ds exponents)))))
 
 ;;
 ;;  Predicates and asserts
