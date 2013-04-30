@@ -133,7 +133,7 @@
   (toString [this]
     (if name
       (str name)
-      (str factor "*" (basic-units-with-exponents unit-system dimension)))))
+      (str (format "%g" factor) "*" (basic-units-with-exponents unit-system dimension)))))
 
 (defn new-unit
   ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
@@ -155,7 +155,7 @@
       (when-not basic?
         (.write w "=")))
     (when-not basic?
-      (print-method (:factor u) w)
+      (.write w (format "%g" (:factor u)))
       (.write w "*")
       (.write w ^String (basic-units-with-exponents us (dimension u))))
     (.write w "}")))
@@ -175,7 +175,7 @@
   (invoke [this o] (in-units-of this o))
   Object
   (toString [this]
-    (str magnitude " (" unit ")")))
+    (str (format "%g" magnitude) " (" unit ")")))
 
 (defn new-quantity
   ([^Number magnitude ^Unit unit]
@@ -190,12 +190,12 @@
     (.write w "#")
     (.write w (if (:name d) (str (:name d)) "quantity"))
     (.write w ":{")
-    (print-method (:magnitude q) w)
+    (.write w (format "%g" (:magnitude q)))
     (.write w " (")
     (if (:name u)
       (print-method (:name u) w)
       (do (when-not (== 1.0 (:factor u))
-            (.write w (str (:factor u) "*")))
+            (.write w (str (format "%g" (:factor u)) "*")))
           (.write w ^String (basic-units-with-exponents (:unit-system u) d))))
     (.write w ")")
     (.write w "}")))
@@ -532,8 +532,7 @@
       (* (magnitude-in-base-units q1)
          (magnitude-in-base-units q2))
       ((get-unit (:unit-system u1) 1.0 dim)
-       (* (magnitude-in-base-units q1) 
-          (magnitude-in-base-units q2))))))
+       (* 1.0 (magnitude-in-base-units q1) (magnitude-in-base-units q2))))))
 
 (defmethod ga/* [root-type ::quantity]
   [a q]
@@ -613,7 +612,7 @@
     (when-not (every? integer? (vals exponents))
       (throw (Exception. (str "Cannot take " dim " to power " r))))
     (let [dim (get-dimension (:dimension-system dim) exponents)
-          u   (get-unit (:unit-system (unit q)) 1 dim)]
+          u   (get-unit (:unit-system (unit q)) 1.0 dim)]
       (u (gm/pow (magnitude-in-base-units q) r)))))
 
 (defmethod gm/pow [::quantity Number]
