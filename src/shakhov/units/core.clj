@@ -133,7 +133,7 @@
   (toString [this]
     (if name
       (str name)
-      (str (format "%g" factor) " " (basic-units-with-exponents unit-system dimension)))))
+      (str (format "%G" (double factor)) " " (basic-units-with-exponents unit-system dimension)))))
 
 (defn new-unit
   ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
@@ -155,7 +155,7 @@
       (when-not basic?
         (.write w "=")))
     (when-not basic?
-      (.write w (format "%g" (:factor u)))
+      (.write w (format "%G" (double (:factor u))))
       (.write w " ")
       (.write w ^String (basic-units-with-exponents us (dimension u))))
     (.write w "}")))
@@ -175,7 +175,7 @@
   (invoke [this o] (in-units-of this o))
   Object
   (toString [this]
-    (str (format "%g" magnitude) " (" unit ")")))
+    (str (format "%G" (double magnitude)) " (" unit ")")))
 
 (defn new-quantity
   ([^Number magnitude ^Unit unit]
@@ -190,12 +190,12 @@
     (.write w "#")
     (.write w (if (:name d) (str (:name d)) "quantity"))
     (.write w ":{")
-    (.write w (format "%g" (:magnitude q)))
+    (.write w (format "%G" (double (:magnitude q))))
     (.write w " (")
     (if (:name u)
       (print-method (:name u) w)
       (do (when-not (== 1.0 (:factor u))
-            (.write w (str (format "%g" (:factor u)) "*")))
+            (.write w (str (format "%G" (double (:factor u))) " ")))
           (.write w ^String (basic-units-with-exponents (:unit-system u) d))))
     (.write w ")")
     (.write w "}")))
