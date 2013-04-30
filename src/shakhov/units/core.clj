@@ -133,7 +133,7 @@
   (toString [this]
     (if name
       (str name)
-      (str (format "%g" factor) "*" (basic-units-with-exponents unit-system dimension)))))
+      (str (format "%g" factor) " " (basic-units-with-exponents unit-system dimension)))))
 
 (defn new-unit
   ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
@@ -156,7 +156,7 @@
         (.write w "=")))
     (when-not basic?
       (.write w (format "%g" (:factor u)))
-      (.write w "*")
+      (.write w " ")
       (.write w ^String (basic-units-with-exponents us (dimension u))))
     (.write w "}")))
 
