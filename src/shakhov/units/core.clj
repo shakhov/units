@@ -130,6 +130,11 @@
   (magnitude-in-base-units [this] factor)
   clojure.lang.IFn
   (invoke [this o] (in-units-of this o))
+  (applyTo 
+    [this o] 
+    (if (= 1 (count o))
+      (in-units-of this (first o))
+      (throw (Exception. (str "Cannot convert " o " to " this)))))
   Object
   (toString [this]
     (if name
@@ -174,13 +179,18 @@
   (magnitude-in-base-units [this] (* magnitude (:factor unit)))
   clojure.lang.IFn
   (invoke [this o] (in-units-of this o))
+  (applyTo 
+    [this o] 
+    (if (= 1 (count o))
+      (in-units-of this (first o))
+      (throw (Exception. (str "Cannot convert " o " to " this)))))
   Object
   (toString [this]
     (str (format "%G" (double magnitude)) " (" unit ")")))
 
 (defn new-quantity
   ([^Number magnitude ^Unit unit]
-     (Quantity. magnitude unit)))
+     (new Quantity magnitude unit)))
 
 ;;  Print-Method
 
