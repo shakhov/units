@@ -51,13 +51,14 @@
 (declare basic-dimensions-with-exponents)
 
 (defrecord Dimension
-    [^DimensionSystem dimension-system
-     exponents
-     name]
+  [^DimensionSystem dimension-system
+   exponents
+   name]
   PQuantity
   (dimension [this] this)
   Object
-  (toString [this]
+  (toString 
+    [this]
     (if name
       (str name)
       (basic-dimensions-with-exponents this))))
@@ -121,9 +122,9 @@
   (fn [u o] [(type u) (type o)]))
 
 (defrecord Unit
-  [^UnitSystem unit-system ^Number factor ^Dimension dimension name]
+  [^UnitSystem unit-system ^Number factor ^Dimension dim name]
   PQuantity
-  (dimension [this] dimension)
+  (dimension [this] dim)
   (unit [this] this)
   (magnitude [this] 1.0)
   (magnitude-in-base-units [this] factor)
@@ -133,13 +134,13 @@
   (toString [this]
     (if name
       (str name)
-      (str (format "%G" (double factor)) " " (basic-units-with-exponents unit-system dimension)))))
+      (str (format "%G" (double factor)) " " (basic-units-with-exponents unit-system dim)))))
 
 (defn new-unit
-  ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
-     (new-unit unit-system factor dimension nil))
-  ([^UnitSystem unit-system ^Number factor ^Dimension dimension name]
-     (Unit. unit-system factor dimension name)))
+  ([^UnitSystem unit-system ^Number factor ^Dimension dim]
+     (new-unit unit-system factor dim nil))
+  ([^UnitSystem unit-system ^Number factor ^Dimension dim name]
+     (Unit. unit-system factor dim name)))
 
 ;;  Print-Method
 
@@ -436,7 +437,7 @@
      (def ~(symbol (str *ns*) (str name))
        (add-unit ~us
                  (:factor unit#)
-                 (:dimension unit#)
+                 (:dim unit#)
                  '~name))))
 
 (defmacro def-unit
@@ -545,7 +546,7 @@
 (ga/defmethod* ga / ::quantity
   [q]
   (let [u (unit q)
-        uinv (get-unit (:unit-system u) (/ (:factor u)) ((ga/qsym ga /) (:dimension u)))]
+        uinv (get-unit (:unit-system u) (/ (:factor u)) ((ga/qsym ga /) (:dim u)))]
     (uinv ((ga/qsym ga /) (magnitude q)))))
 
 ;;
