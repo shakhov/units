@@ -78,12 +78,12 @@
   (is (= time (dimension s))))
 
 (deftest basic-unit-magnitude
-  (is (= 1 (magnitude m)))
-  (is (= 1 (magnitude-in-base-units m)))
-  (is (= 1 (magnitude kg)))
-  (is (= 1 (magnitude-in-base-units kg)))
-  (is (= 1 (magnitude s)))
-  (is (= 1 (magnitude-in-base-units s))))
+  (is (= 1.0 (magnitude m)))
+  (is (= 1.0 (magnitude-in-base-units m)))
+  (is (= 1.0 (magnitude kg)))
+  (is (= 1.0 (magnitude-in-base-units kg)))
+  (is (= 1.0 (magnitude s)))
+  (is (= 1.0 (magnitude-in-base-units s))))
 
 (def-unit si-structural
   mm (* 0.001 m)
@@ -116,7 +116,7 @@
   (is (= 9810.0 (magnitude-in-base-units tonf)))
 
   (is (angle? rad))
-  (is (= 1 (magnitude rad)))
+  (is (= 1.0 (magnitude rad)))
   (is (angle? deg))
   (is (< (- (/ Math/PI 180) 1e-6)
          (magnitude-in-base-units deg)

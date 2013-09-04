@@ -51,23 +51,28 @@
 (declare basic-dimensions-with-exponents)
 
 (defrecord Dimension
-    [^DimensionSystem dimension-system
-     exponents
-     name]
+  [^DimensionSystem dimension-system
+   exponents
+   name]
   PQuantity
   (dimension [this] this)
   Object
-  (toString [this]
+  (toString 
+    [this]
     (if name
       (str name)
       (basic-dimensions-with-exponents this))))
+
+(defn- filter-exponents
+  [exponents]
+  (into {} (remove (comp zero? second) exponents)))
 
 (defn new-dimension
   ([dimension-system exponents]
      (new-dimension dimension-system exponents nil))
   ([dimension-system exponents name]
      (Dimension. dimension-system
-                 exponents
+                 (filter-exponents exponents)
                  name)))
 
 ;;  Print-method
@@ -117,25 +122,30 @@
   (fn [u o] [(type u) (type o)]))
 
 (defrecord Unit
-  [^UnitSystem unit-system ^Number factor ^Dimension dimension name]
+  [^UnitSystem unit-system ^Number factor ^Dimension dim name]
   PQuantity
-  (dimension [this] dimension)
+  (dimension [this] dim)
   (unit [this] this)
-  (magnitude [this] 1)
+  (magnitude [this] 1.0)
   (magnitude-in-base-units [this] factor)
   clojure.lang.IFn
   (invoke [this o] (in-units-of this o))
+  (applyTo 
+    [this o] 
+    (if (= 1 (count o))
+      (in-units-of this (first o))
+      (throw (Exception. (str "Cannot convert " o " to " this)))))
   Object
   (toString [this]
     (if name
       (str name)
-      (str factor "*" (basic-units-with-exponents unit-system dimension)))))
+      (str (format "%G" (double factor)) " " (basic-units-with-exponents unit-system dim)))))
 
 (defn new-unit
-  ([^UnitSystem unit-system ^Number factor ^Dimension dimension]
-     (new-unit unit-system factor dimension nil))
-  ([^UnitSystem unit-system ^Number factor ^Dimension dimension name]
-     (Unit. unit-system factor dimension name)))
+  ([^UnitSystem unit-system ^Number factor ^Dimension dim]
+     (new-unit unit-system factor dim nil))
+  ([^UnitSystem unit-system ^Number factor ^Dimension dim name]
+     (Unit. unit-system factor dim name)))
 
 ;;  Print-Method
 
@@ -151,8 +161,8 @@
       (when-not basic?
         (.write w "=")))
     (when-not basic?
-      (print-method (:factor u) w)
-      (.write w "*")
+      (.write w (format "%G" (double (:factor u))))
+      (.write w " ")
       (.write w ^String (basic-units-with-exponents us (dimension u))))
     (.write w "}")))
 
@@ -169,13 +179,18 @@
   (magnitude-in-base-units [this] (* magnitude (:factor unit)))
   clojure.lang.IFn
   (invoke [this o] (in-units-of this o))
+  (applyTo 
+    [this o] 
+    (if (= 1 (count o))
+      (in-units-of this (first o))
+      (throw (Exception. (str "Cannot convert " o " to " this)))))
   Object
   (toString [this]
-    (str magnitude " (" unit ")")))
+    (str (format "%G" (double magnitude)) " (" unit ")")))
 
 (defn new-quantity
   ([^Number magnitude ^Unit unit]
-     (Quantity. magnitude unit)))
+     (new Quantity magnitude unit)))
 
 ;;  Print-Method
 
@@ -186,13 +201,13 @@
     (.write w "#")
     (.write w (if (:name d) (str (:name d)) "quantity"))
     (.write w ":{")
-    (print-method (:magnitude q) w)
+    (.write w (format "%G" (double (:magnitude q))))
     (.write w " (")
-    (when-not (= 1 (:factor u))
-      (.write w (str (:factor u) "*")))
     (if (:name u)
       (print-method (:name u) w)
-      (.write w ^String (basic-units-with-exponents (:unit-system u) d)))
+      (do (when-not (== 1.0 (:factor u))
+            (.write w (str (format "%G" (double (:factor u))) " ")))
+          (.write w ^String (basic-units-with-exponents (:unit-system u) d))))
     (.write w ")")
     (.write w "}")))
 
@@ -260,18 +275,15 @@
                    (assoc dim-map name dim)))))
        dim)))
 
-(defn- filter-exponents
-  [exponents]
-  (into {} (remove (comp zero? second) exponents)))
-
 (defn get-dimension
   "Return the dimension corresponding to the given set of dimension exponents
    in dimension system, adding new dimension to the dimension system if necessary."
   [^DimensionSystem ds exponents]
-  (let [exponents (filter-exponents exponents)]
-    (if-let [dim (get @(:dimensions ds) exponents)]
-      dim
-      (add-dimension ds exponents))))
+  (let [exponents exponents]
+    (let [exponents (filter-exponents exponents)]
+      (if-let [dim (get @(:dimensions ds) exponents)]
+        dim
+        (add-dimension ds exponents)))))
 
 ;;
 ;;  Predicates and asserts
@@ -394,12 +406,7 @@
        (dosync
         (alter (:units us)
                (fn [unit-map]
-                 (let [old-unit (get-in unit-map [dim factor])]
-                   (assoc-in unit-map [dim factor]
-                             (cond (nil? old-unit) unit
-                                   (or (unnamed? old-unit)
-                                       (= name (:name old-unit))) old-unit
-                                       :else (new-unit us factor dim nil))))))
+                 (assoc-in unit-map [dim factor] unit)))
         (when name
           (alter (:units us)
                  (fn [unit-map]
@@ -425,7 +432,7 @@
   (let [basic-dimensions-and-units (apply hash-map basic-dimensions-and-units)
         unit-defs (map (fn [[d u]]
                          `(def ~(symbol (str *ns*) (str u))
-                            (add-unit ~us-name 1 ~d '~u)))
+                            (add-unit ~us-name 1.0 ~d '~u)))
                        basic-dimensions-and-units)]
     `(do (when-not (= ~@(map (fn [d] `(:dimension-system ~d)) (keys basic-dimensions-and-units)))
            (throw (Exception. (str "Cannot define unit system based on dimensions from different dimenson systems."))))
@@ -440,7 +447,7 @@
      (def ~(symbol (str *ns*) (str name))
        (add-unit ~us
                  (:factor unit#)
-                 (:dimension unit#)
+                 (:dim unit#)
                  '~name))))
 
 (defmacro def-unit
@@ -483,8 +490,9 @@
 
 (defmethod as-unit Dimension
   [us dim]
+  ;; No unit name!!!
   ;; FIXME: assert dimension systems
-  (get-unit us 1 dim))
+  (add-unit us 1.0 dim))
 
 (defmethod as-unit Quantity
   [us q]
@@ -534,8 +542,8 @@
     (if (dimensionless? dim)
       (* (magnitude-in-base-units q1)
          (magnitude-in-base-units q2))
-      ((get-unit (:unit-system u1) (* (:factor u1) (:factor u2)) dim)
-       (* (magnitude q1) (magnitude q2))))))
+      ((get-unit (:unit-system u1) 1.0 dim)
+       (* 1.0 (magnitude-in-base-units q1) (magnitude-in-base-units q2))))))
 
 (defmethod ga/* [root-type ::quantity]
   [a q]
@@ -548,7 +556,7 @@
 (ga/defmethod* ga / ::quantity
   [q]
   (let [u (unit q)
-        uinv (get-unit (:unit-system u) (/ (:factor u)) ((ga/qsym ga /) (:dimension u)))]
+        uinv (get-unit (:unit-system u) (/ (:factor u)) ((ga/qsym ga /) (:dim u)))]
     (uinv ((ga/qsym ga /) (magnitude q)))))
 
 ;;
@@ -615,13 +623,13 @@
     (when-not (every? integer? (vals exponents))
       (throw (Exception. (str "Cannot take " dim " to power " r))))
     (let [dim (get-dimension (:dimension-system dim) exponents)
-          u   (get-unit (:unit-system (unit q)) 1 dim)]
+          u   (get-unit (:unit-system (unit q)) 1.0 dim)]
       (u (gm/pow (magnitude-in-base-units q) r)))))
 
 (defmethod gm/pow [::quantity Number]
   [q ^Number p]
   (cond (dimensionless? q)  (gm/pow (magnitude-in-base-units q) p)
-        (zero? p)           1
+        (zero? p)           1.0
         (= p 1)             q
         (integer? p)        (int-pow q p)
         (ratio? p)          (ratio-pow q p)
